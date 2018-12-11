@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
   initMap(); // added
   fetchNeighborhoods();
   fetchCuisines();
+  manageFocus();
 });
 
 /**
@@ -212,3 +213,25 @@ addMarkersToMap = (restaurants = self.restaurants) => {
     self.markers.push(marker);
   });
 } */
+
+/**
+ * Prevent tabbing to markers, leaflet links and zoom buttons
+ */
+manageFocus = () => {
+    const leafletjsLinks = document.querySelectorAll('.leaflet-control-attribution a');
+    [...leafletjsLinks].forEach(link => {
+        link.tabIndex = '-1';
+    });
+
+    // Turn off tabbing on the zoom buttons
+    [...document.querySelectorAll('.leaflet-control-zoom a')].forEach(btn => {
+        btn.tabIndex = '-1';
+    });
+
+    // Turn off tabbing on the markers
+    [...document.querySelectorAll('.leaflet-marker-pane img.leaflet-marker-icon')].forEach(mkr => {
+        mkr.tabIndex = '-1';
+    });
+
+    const unfocusableElementsString = '';
+};
