@@ -218,20 +218,10 @@ addMarkersToMap = (restaurants = self.restaurants) => {
  * Prevent tabbing to markers, leaflet links and zoom buttons
  */
 manageFocus = () => {
-    const leafletjsLinks = document.querySelectorAll('.leaflet-control-attribution a');
-    [...leafletjsLinks].forEach(link => {
-        link.tabIndex = '-1';
-    });
+    const unfocusableElementsString = '.leaflet-container, .leaflet-control-attribution a, .leaflet-control-zoom a';
 
-    // Turn off tabbing on the zoom buttons
-    [...document.querySelectorAll('.leaflet-control-zoom a')].forEach(btn => {
-        btn.tabIndex = '-1';
+    // Turn off tabbing on the leaflet links, zoom buttons
+    [...document.querySelectorAll(unfocusableElementsString)].forEach(el => {
+        el.tabIndex = '-1';
     });
-
-    // Turn off tabbing on the markers
-    [...document.querySelectorAll('.leaflet-marker-pane img.leaflet-marker-icon')].forEach(mkr => {
-        mkr.tabIndex = '-1';
-    });
-
-    const unfocusableElementsString = '';
 };
