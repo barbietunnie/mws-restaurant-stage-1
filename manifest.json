@@ -1,0 +1,21 @@
+{
+  "short_name": "Restaurants",
+  "name": "MWS Restaurants",
+  "icons": [
+    {
+      "src": "/img/icon-128.png",
+      "type": "image/png",
+      "sizes": "128x128"
+    },
+    {
+      "src": "/img/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#3397DB",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#3397DB"
+}

@@ -6,6 +6,7 @@ const contentImgsCache = 'mws-restaurant-content-imgs';
 const allCaches = [staticCacheName, contentImgsCache];
 const urlsToCache = [
     '/',
+    '/manifest.json',
     '/restaurant.html',
     'css/styles.css',
     'dist/utils.js',
