@@ -46,15 +46,41 @@ export default class DBHelper {
    * Fetch all restaurants.
    */
   static fetchRestaurants(callback) {
-    fetch(DBHelper.RESTAURANTS_URL)
-        .then(response => response.json())
-        .then(restaurants => {
-          callback(null, restaurants);
-        })
-        .catch(error => {
-          // const error = (`Request failed. Returned status of ${xhr.status}`);
-          callback(error, null);
-        });
+    const dbHandle = DBHelper.openDatabase();
+    dbHandle.then(db => {
+      if(!db)
+        return;
+
+      db.transaction(DBHelper.DATABASE_NAME)
+          .objectStore(DBHelper.OBJECT_STORE_NAME)
+          .getAll()
+          .then(restaurants => {
+            if (restaurants) {
+              callback(null, restaurants);
+              return;
+            }
+
+            fetch(`${DBHelper.RESTAURANTS_URL}/${id}`)
+                .then(response => response.json())
+                .then(restaurants => {
+                  if (!restaurants) {
+                    callback('No restaurants received from server', null);
+                    return;
+                  }
+
+                  db.transaction(DBHelper.DATABASE_NAME, 'readwrite')
+                      .objectStore(DBHelper.OBJECT_STORE_NAME)
+                      .put(restaurants);
+                  callback(null, restaurants);
+                })
+                .catch(error => {
+                  // const error = (`Request failed. Returned status of ${xhr.status}`);
+                  callback(error, null);
+                });
+
+          });
+
+    });
   }
 
   /**
