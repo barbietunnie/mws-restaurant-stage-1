@@ -45,8 +45,6 @@ self.addEventListener('fetch', function (event) {
             return;
         }
 
-
-
         if(requestUrl.pathname.startsWith('/restaurant.html')) {
             event.respondWith(serveRestaurant(event.request));
             return;

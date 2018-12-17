@@ -51,33 +51,39 @@ export default class DBHelper {
       if(!db)
         return;
 
+      let allRestaurants = [];
       db.transaction(DBHelper.DATABASE_NAME)
           .objectStore(DBHelper.OBJECT_STORE_NAME)
           .getAll()
-          .then(restaurants => {
-            if (restaurants) {
-              callback(null, restaurants);
-              return;
+          .then(restaurantsInDB => {
+            if (restaurantsInDB) {
+              allRestaurants = restaurantsInDB.slice();
             }
 
-            fetch(`${DBHelper.RESTAURANTS_URL}/${id}`)
+            // to avoid retrieving only a subset of what's available online,
+            // also make a network request to fetch all records
+            fetch(`${DBHelper.RESTAURANTS_URL}`)
                 .then(response => response.json())
                 .then(restaurants => {
-                  if (!restaurants) {
-                    callback('No restaurants received from server', null);
+                  const store = db.transaction(DBHelper.DATABASE_NAME, 'readwrite')
+                      .objectStore(DBHelper.OBJECT_STORE_NAME)
+                  restaurants.filter(restaurant => !allRestaurants.map(ar => ar.id).includes(restaurant.id))
+                      .forEach(restaurant => {
+                        store.put(restaurant);
+                        allRestaurants.push(restaurant);
+                      });
+
+                  if (!allRestaurants) {
+                    callback('No restaurants found', null);
                     return;
                   }
 
-                  db.transaction(DBHelper.DATABASE_NAME, 'readwrite')
-                      .objectStore(DBHelper.OBJECT_STORE_NAME)
-                      .put(restaurants);
-                  callback(null, restaurants);
+                  callback(null, allRestaurants);
                 })
                 .catch(error => {
                   // const error = (`Request failed. Returned status of ${xhr.status}`);
                   callback(error, null);
                 });
-
           });
 
     });
