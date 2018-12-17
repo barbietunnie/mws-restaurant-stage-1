@@ -28,5 +28,18 @@ This repository uses [leafletjs](https://leafletjs.com/) with [Mapbox](https://w
 
 Most of the code in this project has been written to the ES6 JavaScript specification for compatibility with modern web browsers and future proofing JavaScript code. As much as possible, try to maintain use of ES6 in any additional JavaScript you write. 
 
+### Running tha application
+A production build of the scripts needs to be created before the application can be launched.
+
+To create a production build, run the following command:
+```$xslt
+    yarn run serve
+```
+
+or
+
+```$xslt
+    npm run serve
+```
 
 
