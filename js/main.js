@@ -27,7 +27,6 @@ const fetchNeighborhoods = () => {
     if (error) { // Got an error
       console.error(error);
     } else {
-      console.log(neighborhoods);
       self.neighborhoods = neighborhoods;
       fillNeighborhoodsHTML();
     }
