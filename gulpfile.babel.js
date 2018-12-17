@@ -1,43 +1,34 @@
 import gulp from 'gulp';
-import babel from 'gulp-babel';
+import browserify from 'browserify';
+import babelify from 'babelify';
+import log from 'gulplog';
+import tap from 'gulp-tap';
+import buffer from 'gulp-buffer';
 import sourcemaps from 'gulp-sourcemaps';
-import eslint from 'gulp-eslint';
-import del from 'del';
 
-const paths = {
-    styles: {
-        src: '',
-        dest: ''
-    },
-    scripts: {
-        src: 'js/**/*.js',
-        dest: 'dist/'
-    }
-};
-
-export const clean = () => del([ 'dist' ]);
-
-function es6_compile() {
-    return gulp.src(paths.scripts.src)
-                .pipe(sourcemaps.init())
-                .pipe(babel())
-                .pipe(sourcemaps.write('.'))
-                .pipe(gulp.dest(paths.scripts.dest));
-}
-
-function lint() {
+export function compile() {
     return gulp
-            .src([paths.scripts.src])
-            .pipe(eslint())
-            .pipe(eslint.format());
+                .src('js/**/*.js', {read: false}) // no need reading the file since browserify does
+
+                // transform the file objects using gulp-atp plugin
+        .pipe(tap((file) => {
+            log.info(`Bundling ${file.path}`);
+
+            // replace the file contents with browserify's bundle stream
+            file.contents = browserify(file.path, {debug: true})
+                .transform(babelify.configure({presets: ['@babel/preset-env']} )).bundle();
+        }))
+
+        // transform streaming contents into buffer contents
+        // (since gulp-sourcemaps does not support streaming contents)
+        .pipe(buffer())
+
+        // load and initialize sourcemaps
+        .pipe(sourcemaps.init({loadMaps: true}))
+    
+        // write sourcemaps
+        .pipe(sourcemaps.write('./'))
+        .pipe(gulp.dest('dist'));
 }
 
-function watch() {
-    // gulp.watch(paths.scripts.src, ['scripts', 'lint']);
-    gulp.watch(paths.scripts.src, build);
-}
-
-const build = gulp.series(clean, es6_compile);
-exports.es6_compile = es6_compile;
-exports.watch = watch;
-exports.default = es6_compile;
+export default compile;
