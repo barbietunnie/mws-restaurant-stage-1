@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "serve": "gulp"
+  },
   "dependencies": {
     "idb": "^2.1.3"
   },

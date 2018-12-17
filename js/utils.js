@@ -1,4 +1,6 @@
-registerServiceWorker = () => {
+import DBHelper from './dbhelper';
+
+const registerServiceWorker = () => {
     if (!navigator.serviceWorker) return;
 
     window.addEventListener('load', function() {
@@ -15,4 +17,9 @@ registerServiceWorker = () => {
     });
 };
 
-registerServiceWorker();
+const initApp = () => {
+    DBHelper.openDatabase();
+    registerServiceWorker();
+};
+
+initApp();

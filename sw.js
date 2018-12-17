@@ -1,22 +1,22 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 'use strict';
 
-const staticCacheName = 'mws-restaurant-static-v3';
+const staticCacheName = 'mws-restaurant-static-v5';
 const contentImgsCache = 'mws-restaurant-content-imgs';
 const allCaches = [staticCacheName, contentImgsCache];
 const urlsToCache = [
     '/',
     '/restaurant.html',
     'css/styles.css',
-    'js/utils.js',
-    'js/dbhelper.js',
-    'js/main.js',
-    'js/restaurant_info.js',
-    'data/restaurants.json',
+    'dist/utils.js',
+    'dist/dbhelper.js',
+    'dist/main.js',
+    'dist/restaurant_info.js',
     'https://unpkg.com/leaflet@1.3.1/dist/leaflet.js',
     'https://unpkg.com/leaflet@1.3.1/dist/leaflet.css',
     'https://unpkg.com/leaflet@1.3.1/dist/images/marker-icon-2x.png',
-    'https://unpkg.com/leaflet@1.3.1/dist/images/marker-shadow.png'
+    'https://unpkg.com/leaflet@1.3.1/dist/images/marker-shadow.png',
+    'http://localhost:1337/restaurants'
 ];
 
 self.addEventListener('install', function (event) {
@@ -37,6 +37,7 @@ self.addEventListener('activate', function (event) {
 
 self.addEventListener('fetch', function (event) {
     const requestUrl = new URL(event.request.url);
+    const server = new URL('http://localhost:1337/');
 
     if (requestUrl.origin === location.origin) {
         if (requestUrl.pathname.startsWith('/img/')) {
@@ -44,9 +45,20 @@ self.addEventListener('fetch', function (event) {
             return;
         }
 
+
+
         if(requestUrl.pathname.startsWith('/restaurant.html')) {
             event.respondWith(serveRestaurant(event.request));
             return;
+        }
+    }
+
+    if (requestUrl.origin === server.origin) {
+        const storageUrl = event.request.url.replace(/(restaurants)\/?\d+$/, '');
+        console.log('Server storage URL: ', storageUrl);
+
+        if(requestUrl.pathname.startsWith('/restaurants/')) {
+            console.log('Server Origin: ', server, ', request url: ', requestUrl);
         }
     }
 
@@ -71,7 +83,7 @@ function serveImage(request) {
 }
 
 function serveRestaurant(request) {
-    const pageUrl = request.url.replace(/(\?id=\d+)?$/, '');
+    const pageUrl = request.url;
 
     return caches.open(staticCacheName).then(function (cache) {
         return cache.match(pageUrl).then(function (response) {
