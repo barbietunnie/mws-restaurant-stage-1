@@ -37,7 +37,6 @@ self.addEventListener('activate', function (event) {
 
 self.addEventListener('fetch', function (event) {
     const requestUrl = new URL(event.request.url);
-    const server = new URL('http://localhost:1337/');
 
     if (requestUrl.origin === location.origin) {
         if (requestUrl.pathname.startsWith('/img/')) {
@@ -48,15 +47,6 @@ self.addEventListener('fetch', function (event) {
         if(requestUrl.pathname.startsWith('/restaurant.html')) {
             event.respondWith(serveRestaurant(event.request));
             return;
-        }
-    }
-
-    if (requestUrl.origin === server.origin) {
-        const storageUrl = event.request.url.replace(/(restaurants)\/?\d+$/, '');
-        console.log('Server storage URL: ', storageUrl);
-
-        if(requestUrl.pathname.startsWith('/restaurants/')) {
-            console.log('Server Origin: ', server, ', request url: ', requestUrl);
         }
     }
 
