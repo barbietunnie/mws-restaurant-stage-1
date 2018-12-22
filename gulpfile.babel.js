@@ -46,9 +46,11 @@ export function createBundle(src) {
     };
 
     let opts = assign({}, watchify.args, customOpts);
-    const bundle = browserify(opts);
+    // const bundle = browserify(opts);
+    const bundle = watchify(browserify(opts), { debug: true }).transform(babelify);
     bundle.transform(babelify.configure({presets: ['@babel/preset-env']} ));
-    bundle.on('error', () => {});
+    bundle.on('error', (err) => { console.error(err); this.emit('end'); });
+    bundle.on('update', (ids) => { console.log('Updated: ', ids); });
     return bundle.bundle();
 }
 
