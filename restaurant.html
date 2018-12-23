@@ -54,6 +54,29 @@
     <section id="reviews-container">
       <ul id="reviews-list"></ul>
     </section>
+    <section id="reviews-submission">
+      <form id="review-form">
+        <div>
+          <label for="name">Name:</label>
+          <input id="name" class="form-control" type="text" />
+        </div>
+        <div>
+          <input id="restaurant_id" type="hidden" value="" />
+        </div>
+        <div>
+          <label for="rating">Rating: </label>
+          <input id="rating" class="form-control" type="number" max="10">
+        </div>
+        <div>
+          <label for="comments">Comments: </label>
+          <textarea name="comments" class="form-control" id="comments" cols="30" rows="4"></textarea>
+        </div>
+        <div class="submit-control">
+          <button class="submit" type="submit">Submit</button>
+        </div>
+        <div class="clear"></div>
+      </form>
+    </section>
     <!-- End reviews -->
   </main>
   <!-- End main -->
