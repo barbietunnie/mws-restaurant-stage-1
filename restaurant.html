@@ -55,21 +55,21 @@
       <ul id="reviews-list"></ul>
     </section>
     <section id="reviews-submission">
-      <form id="review-form">
+      <form id="review-form" method="post">
         <div>
           <label for="name">Name:</label>
-          <input id="name" class="form-control" type="text" />
+          <input id="name" class="form-control" type="text" required aria-required="true" />
         </div>
         <div>
           <input id="restaurant_id" type="hidden" value="" />
         </div>
         <div>
           <label for="rating">Rating: </label>
-          <input id="rating" class="form-control" type="number" max="10">
+          <input id="rating" class="form-control" type="number" min="0" max="10" required aria-required="true">
         </div>
         <div>
           <label for="comments">Comments: </label>
-          <textarea name="comments" class="form-control" id="comments" cols="30" rows="4"></textarea>
+          <textarea name="comments" class="form-control" id="comments" required aria-required="true" cols="30" rows="4"></textarea>
         </div>
         <div class="submit-control">
           <button class="submit" type="submit">Submit</button>
