@@ -1,7 +1,7 @@
 @charset "utf-8";
 /* CSS Document */
 
-body,td,th,p{
+body,td,th,p,input,textarea{
 	font-family: Arial, Helvetica, sans-serif;
 	font-size: 10pt;
 	color: #333;
@@ -292,8 +292,7 @@ form label {
 form .form-control {
    display: block;
    width: 100%;
-   font-size: 1rem;
-   line-height: 1.5;
+   padding: 6px;
    color: #495057;
    background-color: #fff;
    background-clip: padding-box;
