@@ -53,13 +53,24 @@ const fetchRestaurantFromURL = (callback) => {
     callback(error, null);
   } else {
     DBHelper.fetchRestaurantById(id, (error, restaurant) => {
-      self.restaurant = restaurant;
       if (!restaurant) {
         console.error(error);
         return;
       }
-      fillRestaurantHTML();
-      callback(null, restaurant)
+
+      // Fetch the reviews belonging to the restaurant
+      DBHelper.fetchReviewsByRestaurantId(id, (error, reviews) => {
+        if (error) {
+          callback(error, null);
+          return;
+        }
+
+        restaurant.reviews = reviews;
+        self.restaurant = restaurant;
+
+        fillRestaurantHTML();
+        callback(null, restaurant);
+      });
     });
   }
 }

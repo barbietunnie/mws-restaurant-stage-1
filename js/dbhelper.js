@@ -56,6 +56,13 @@ export default class DBHelper {
     return 'favorites';
   }
 
+  /**
+   * Restaurant reviews index name
+   */
+  static get RESTAURANT_REVIEWS_INDEX_NAME() {
+    return 'restaurant';
+  }
+
   static openDatabase() {
     // If the browser doesn't support service worker,
     // we don't care about having a database
@@ -82,7 +89,7 @@ export default class DBHelper {
                                 { autoIncrement: true }
                                 );
         case 2: const reviewsStore = upgradeDb.transaction.objectStore(DBHelper.REVIEWS_OBJECT_STORE);
-                reviewsStore.createIndex('restaurant', 'restaurant_id');
+                reviewsStore.createIndex(DBHelper.RESTAURANT_REVIEWS_INDEX_NAME, 'restaurant_id');
       }
 
     });
@@ -158,7 +165,7 @@ export default class DBHelper {
                   .then(response => response.json())
                   .then(restaurant => {
                     if (restaurant) { // Got the restaurant
-                      db.transaction(DBHelper.DATABASE_NAME, 'readwrite')
+                      db.transaction(DBHelper.RESTAURANT_OBJECT_STORE, 'readwrite')
                           .objectStore(DBHelper.RESTAURANT_OBJECT_STORE)
                           .put(restaurant);
                       callback(null, restaurant);
@@ -172,6 +179,48 @@ export default class DBHelper {
                   });
 
             });
+
+    });
+  }
+
+  /**
+   * Fetch a reviews by restaurant ID.
+   */
+  static fetchReviewsByRestaurantId(id, callback) {
+    // Lookup database for record with the specified ID
+    const dbHandle = DBHelper.openDatabase();
+    dbHandle.then(db => {
+      if(!db)
+        return;
+
+      db.transaction(DBHelper.REVIEWS_OBJECT_STORE)
+          .objectStore(DBHelper.REVIEWS_OBJECT_STORE)
+          .index(DBHelper.RESTAURANT_REVIEWS_INDEX_NAME)
+          .getAll(Number(id))
+          .then(reviews => {
+            if (reviews) {
+              callback(null, reviews);
+              return;
+            }
+
+            // fetch(`${DBHelper.RESTAURANTS_URL}/${id}`)
+            //     .then(response => response.json())
+            //     .then(restaurant => {
+            //       if (restaurant) { // Got the restaurant
+            //         db.transaction(DBHelper.DATABASE_NAME, 'readwrite')
+            //             .objectStore(DBHelper.RESTAURANT_OBJECT_STORE)
+            //             .put(restaurant);
+            //         callback(null, restaurant);
+            //       } else { // Restaurant does not exist in the database
+            //         callback('Restaurant does not exist', null);
+            //       }
+            //     })
+            //     .catch(error => {
+            //       // const error = (`Request failed. Returned status of ${xhr.status}`);
+            //       callback(error, null);
+            //     });
+
+          });
 
     });
   }
