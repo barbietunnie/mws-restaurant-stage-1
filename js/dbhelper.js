@@ -22,10 +22,38 @@ export default class DBHelper {
   }
 
   /**
-   * Object store name
+   * Database version
    */
-  static get OBJECT_STORE_NAME() {
+  static get DATABASE_VERSION() {
+    return 3;
+  }
+
+  /**
+   * Restaurant object store name
+   */
+  static get RESTAURANT_OBJECT_STORE() {
     return 'restaurants';
+  }
+
+  /**
+   * Reviews object store name
+   */
+  static get REVIEWS_OBJECT_STORE() {
+    return 'reviews';
+  }
+
+  /**
+   * Offline data object store name
+   */
+  static get LOCAL_REVIEWS_OBJECT_STORE() {
+    return 'local';
+  }
+
+  /**
+   * Offline favorites object store name
+   */
+  static get LOCAL_FAVORITES_OBJECT_STORE() {
+    return 'favorites';
   }
 
   static openDatabase() {
@@ -35,10 +63,28 @@ export default class DBHelper {
       return Promise.resolve();
     }
 
-    return idb.open(DBHelper.DATABASE_NAME, 1, function(upgradeDb) {
-      upgradeDb.createObjectStore(DBHelper.OBJECT_STORE_NAME, {
-        keyPath: 'id'
-      });
+    return idb.open(DBHelper.DATABASE_NAME, DBHelper.DATABASE_VERSION, function(upgradeDb) {
+      switch (upgradeDb.oldVersion) {
+        case 0: upgradeDb.createObjectStore(DBHelper.RESTAURANT_OBJECT_STORE, {
+                  keyPath: 'id'
+                });
+        case 1: upgradeDb.createObjectStore(
+                              DBHelper.REVIEWS_OBJECT_STORE,
+              { keyPath: 'id' }
+                          );
+                const localStore = upgradeDb.createObjectStore(
+                                DBHelper.LOCAL_REVIEWS_OBJECT_STORE,
+                                { autoIncrement: true }
+                          );
+                localStore.createIndex('creationDate', 'date');
+                upgradeDb.createObjectStore(
+                                DBHelper.LOCAL_FAVORITES_OBJECT_STORE,
+                                { autoIncrement: true }
+                                );
+        case 2: const reviewsStore = upgradeDb.transaction.objectStore(DBHelper.REVIEWS_OBJECT_STORE);
+                reviewsStore.createIndex('restaurant', 'restaurant_id');
+      }
+
     });
   }
 
@@ -53,7 +99,7 @@ export default class DBHelper {
 
       let allRestaurants = [];
       db.transaction(DBHelper.DATABASE_NAME)
-          .objectStore(DBHelper.OBJECT_STORE_NAME)
+          .objectStore(DBHelper.RESTAURANT_OBJECT_STORE)
           .getAll()
           .then(restaurantsInDB => {
             if (restaurantsInDB) {
@@ -66,7 +112,7 @@ export default class DBHelper {
                 .then(response => response.json())
                 .then(restaurants => {
                   const store = db.transaction(DBHelper.DATABASE_NAME, 'readwrite')
-                      .objectStore(DBHelper.OBJECT_STORE_NAME)
+                      .objectStore(DBHelper.RESTAURANT_OBJECT_STORE)
                   restaurants.filter(restaurant => !allRestaurants.map(ar => ar.id).includes(restaurant.id))
                       .forEach(restaurant => {
                         store.put(restaurant);
@@ -100,7 +146,7 @@ export default class DBHelper {
         return;
 
       db.transaction(DBHelper.DATABASE_NAME)
-          .objectStore(DBHelper.OBJECT_STORE_NAME)
+          .objectStore(DBHelper.RESTAURANT_OBJECT_STORE)
           .get(Number(id))
           .then(restaurant => {
               if (restaurant) {
@@ -113,7 +159,7 @@ export default class DBHelper {
                   .then(restaurant => {
                     if (restaurant) { // Got the restaurant
                       db.transaction(DBHelper.DATABASE_NAME, 'readwrite')
-                          .objectStore(DBHelper.OBJECT_STORE_NAME)
+                          .objectStore(DBHelper.RESTAURANT_OBJECT_STORE)
                           .put(restaurant);
                       callback(null, restaurant);
                     } else { // Restaurant does not exist in the database
@@ -267,5 +313,44 @@ export default class DBHelper {
       })
       marker.addTo(self.newMap);
     return marker;
+  }
+
+  /**
+   * Store the review in the database where it can be synced
+   * with the server later on
+   *
+   * @param review
+   */
+  static storeReviewOffline(review) {
+    const dbHandle = DBHelper.openDatabase();
+    return dbHandle.then(db => {
+      if(!db)
+        return;
+
+      const tx = db.transaction(DBHelper.LOCAL_REVIEWS_OBJECT_STORE, 'readwrite');
+      const localStore = tx.objectStore(DBHelper.LOCAL_REVIEWS_OBJECT_STORE);
+      localStore.put(review);
+
+      return tx.complete;
+    });
+  }
+
+  /**
+   * Save the review
+   *
+   * @param review
+   */
+  static saveReview(review) {
+    const dbHandle = DBHelper.openDatabase();
+    return dbHandle.then(db => {
+      if(!db)
+        return;
+
+      const tx = db.transaction(DBHelper.REVIEWS_OBJECT_STORE, 'readwrite');
+      const store = tx.objectStore(DBHelper.REVIEWS_OBJECT_STORE);
+      store.put(review);
+
+      return tx.complete;
+    });
   }
 }

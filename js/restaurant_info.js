@@ -49,7 +49,7 @@ const fetchRestaurantFromURL = (callback) => {
   }
   const id = getParameterByName('id');
   if (!id) { // no id found in URL
-    error = 'No restaurant id in URL'
+    const error = 'No restaurant id in URL'
     callback(error, null);
   } else {
     DBHelper.fetchRestaurantById(id, (error, restaurant) => {
@@ -90,6 +90,9 @@ const fillRestaurantHTML = (restaurant = self.restaurant) => {
   }
   // fill reviews
   fillReviewsHTML();
+
+  // Register form submission handler
+  registerReviewFormHandler(restaurant);
 }
 
 /**
@@ -117,21 +120,40 @@ const fillRestaurantHoursHTML = (operatingHours = self.restaurant.operating_hour
  */
 const fillReviewsHTML = (reviews = self.restaurant.reviews) => {
   const container = document.getElementById('reviews-container');
+  const ul = document.getElementById('reviews-list');
   const title = document.createElement('h3');
   title.innerHTML = 'Reviews';
-  container.appendChild(title);
+  container.insertBefore(title, ul);
 
   if (!reviews) {
     const noReviews = document.createElement('p');
+    noReviews.id = 'no-reviews';
     noReviews.innerHTML = 'No reviews yet!';
     container.appendChild(noReviews);
     return;
   }
-  const ul = document.getElementById('reviews-list');
+
   reviews.forEach(review => {
     ul.appendChild(createReviewHTML(review));
   });
   container.appendChild(ul);
+};
+
+/**
+ * Adds a new review to the reviews on the webpage
+ */
+const updateReviewsHTML = (review) => {
+  const container = document.getElementById('reviews-container');
+  
+  // If the reviews list currently displays the 'No reviews yet' message,
+  // remove it
+  const noReviewsElement = container.querySelector('#no-reviews');
+  if(noReviewsElement) {
+    container.removeChild(noReviewsElement);
+  }
+
+  const ul = document.getElementById('reviews-list');
+  ul.appendChild(createReviewHTML(review));
 };
 
 /**
@@ -144,7 +166,7 @@ const createReviewHTML = (review) => {
   li.appendChild(name);
 
   const date = document.createElement('p');
-  date.innerHTML = review.date;
+  date.innerHTML = review.createdAt;
   li.appendChild(date);
 
   const rating = document.createElement('p');
@@ -194,4 +216,66 @@ const manageFocus = () => {
   [...document.querySelectorAll(unfocusableElementsString)].forEach(el => {
     el.tabIndex = '-1';
   });
+};
+
+const registerReviewFormHandler = (restaurant = self.restaurant) => {
+  const form = document.querySelector('#review-form');
+
+  form.addEventListener('submit', (evt) => {
+    evt.preventDefault();
+
+    const formFieldSelectors = ['#name', '#rating', '#comments'];
+    const formElements = document.querySelectorAll(formFieldSelectors);
+
+    // Convert NodeList to Array
+    const fieldsArr = Array.prototype.slice.apply(formElements);
+
+    const data = {
+      restaurant_id: restaurant.id,
+      name: fieldsArr[0].value,
+      rating: fieldsArr[1].value,
+      comments: fieldsArr[2].value
+    };
+
+    // Post the review if the user is connected online,
+    // otherwise, save the record locally
+    if(!navigator.onLine) {
+      // Include the date the review was saved, to use for sorting later
+      data.createdAt = Date.now();
+
+      // Save to database for later retry
+      DBHelper.storeReviewOffline(data);
+
+      // Update page
+      updateReviewsHTML(data);
+
+      // Clear fields
+      fieldsArr.forEach(field => field.value = '');
+      return;
+    }
+
+    const options = {
+      method: 'POST',
+      mode: 'cors', // no-cors, cors, same-origin
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    };
+
+    // Post review
+    fetch('http://localhost:1337/reviews/', options)
+        .then(response => response.json())
+        .then(review => {
+          // Save the stored review locally
+          DBHelper.saveReview(review);
+
+          // Update the view
+          updateReviewsHTML(review);
+        })
+        .catch(error => console.error(error));
+
+    // Clear fields
+    fieldsArr.forEach(field => field.value = '');
+  }, false);
 };
