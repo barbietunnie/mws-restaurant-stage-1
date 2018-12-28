@@ -1,16 +1,16 @@
 import gulp from 'gulp';
 import browserify from 'browserify';
 import babelify from 'babelify';
-import watchify from 'watchify';
+import del from 'del';
+import uglify from 'gulp-uglify';
 import log from 'gulplog';
 import tap from 'gulp-tap';
 import buffer from 'gulp-buffer';
 import sourcemaps from 'gulp-sourcemaps';
-import assign from "lodash/assign";
 
-export function compile() {
+export function transpile() {
     return gulp
-                .src('js/**/*.js', {read: false}) // no need reading the file since browserify does
+                .src(['js/**/*.js'], {read: false}) // no need reading the file since browserify does
 
                 // transform the file objects using gulp-atp plugin
         .pipe(tap((file) => {
@@ -26,10 +26,11 @@ export function compile() {
 
         // load and initialize sourcemaps
         .pipe(sourcemaps.init({loadMaps: true}))
+        .pipe(uglify())
     
         // write sourcemaps
         .pipe(sourcemaps.write('./'))
-        .pipe(gulp.dest('dist'));
+        .pipe(gulp.dest('dist/scripts'));
 }
 
 export function createBundle(src) {
@@ -41,17 +42,19 @@ export function createBundle(src) {
         entries: src,
         cache: {},
         packageCache: {},
-        // plugin: [watchify],
         debug: true
     };
 
-    let opts = assign({}, watchify.args, customOpts);
-    // const bundle = browserify(opts);
-    const bundle = watchify(browserify(opts), { debug: true }).transform(babelify);
+    const bundle = browserify(customOpts);
     bundle.transform(babelify.configure({presets: ['@babel/preset-env']} ));
     bundle.on('error', (err) => { console.error(err); this.emit('end'); });
-    bundle.on('update', (ids) => { console.log('Updated: ', ids); });
+    bundle.on('update', (ids) => { console.log('Updated: ', ids); transpile(); });
     return bundle.bundle();
 }
 
-export default compile;
+function clean(done) {
+    del(['dist/'], done);
+    done();
+}
+
+exports.default = gulp.series(clean, transpile);

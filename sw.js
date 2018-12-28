@@ -1,7 +1,7 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 'use strict';
 
-const staticCacheName = 'mws-restaurant-static-v9';
+const staticCacheName = 'mws-restaurant-static-v10';
 const contentImgsCache = 'mws-restaurant-content-imgs';
 const allCaches = [staticCacheName, contentImgsCache];
 const urlsToCache = [
@@ -9,10 +9,10 @@ const urlsToCache = [
     '/manifest.json',
     '/restaurant.html',
     '/css/styles.css',
-    '/dist/utils.js',
-    '/dist/dbhelper.js',
-    '/dist/main.js',
-    '/dist/restaurant_info.js',
+    '/dist/scripts/utils.js',
+    '/dist/scripts/dbhelper.js',
+    '/dist/scripts/main.js',
+    '/dist/scripts/restaurant_info.js',
     'https://unpkg.com/leaflet@1.3.1/dist/leaflet.js',
     'https://unpkg.com/leaflet@1.3.1/dist/leaflet.css',
     'https://unpkg.com/leaflet@1.3.1/dist/images/marker-icon-2x.png',

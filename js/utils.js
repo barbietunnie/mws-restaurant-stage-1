@@ -164,12 +164,14 @@ const showNotification = (message) => {
     const notification = document.getElementById('notification');
     notification.innerHTML = message;
     notification.classList.remove('hide');
+    notification.setAttribute('aria-hidden', false);
 };
 
 const hideNotification = () => {
     const notification = document.getElementById('notification');
     notification.innerHTML = '';
     notification.classList.add('hide');
+    notification.setAttribute('aria-hidden', true);
 };
 
 window.addEventListener('online', syncData);
