@@ -103,7 +103,7 @@ export default class DBHelper {
                 localStore.createIndex('date', 'createdAt');
                 upgradeDb.createObjectStore(
                                 DBHelper.LOCAL_FAVORITES_OBJECT_STORE,
-                                { /*autoIncrement: true*/ keyPath: DBHelper.UUID_INDEX_NAME  }
+                                { keyPath: 'id'  }
                                 );
         case 2: const reviewsStore = upgradeDb.transaction.objectStore(DBHelper.REVIEWS_OBJECT_STORE);
                 reviewsStore.createIndex(DBHelper.RESTAURANT_REVIEWS_INDEX_NAME, 'restaurant_id');
@@ -352,6 +352,25 @@ export default class DBHelper {
     });
   }
 
+    /**
+     * Fetch all unsubmitted favorites.
+     */
+    static fetchUnsubmittedFavorites(callback) {
+        const dbHandle = DBHelper.openDatabase();
+        dbHandle.then(db => {
+            if(!db)
+                return;
+
+            db.transaction(DBHelper.LOCAL_FAVORITES_OBJECT_STORE)
+                .objectStore(DBHelper.LOCAL_FAVORITES_OBJECT_STORE)
+                .getAll()
+                .then(localFavsInDB => {
+                    callback(null, localFavsInDB);
+                }).catch(error => callback(error, null));
+
+        });
+    }
+
   /**
    * Restaurant page URL.
    */
@@ -450,7 +469,7 @@ export default class DBHelper {
    */
   static removeUnsubmittedReview(reviewUid) {
     const dbHandle = DBHelper.openDatabase();
-    dbHandle.then(db => {
+    return dbHandle.then(db => {
       if(!db)
         return;
 
@@ -461,4 +480,60 @@ export default class DBHelper {
       return tx.complete;
     });
   }
+
+    /**
+     * Update the restaurant in the database
+     *
+     * @param restaurant
+     */
+  static updateRestaurant(restaurant) {
+      const dbHandle = DBHelper.openDatabase();
+      return dbHandle.then(db => {
+          if(!db)
+              return;
+
+          const tx = db.transaction(DBHelper.RESTAURANT_OBJECT_STORE, 'readwrite');
+          tx.objectStore(DBHelper.RESTAURANT_OBJECT_STORE)
+              .put(restaurant);
+
+          return tx.complete;
+      });
+  }
+
+    /**
+     * Store favorite intent in the database
+     * @param restaurant
+     */
+    static storeFavorite(restaurant) {
+        const dbHandle = DBHelper.openDatabase();
+        return dbHandle.then(db => {
+            if(!db)
+                return false;
+
+            const tx = db.transaction(DBHelper.LOCAL_FAVORITES_OBJECT_STORE, 'readwrite');
+            tx.objectStore(DBHelper.LOCAL_FAVORITES_OBJECT_STORE)
+                .put(restaurant);
+
+            return tx.complete;
+        });
+    }
+
+    /**
+     * Delete the specified unsubmitted favorite from database
+     *
+     * @param restaurantId
+     */
+    static removeSubmittedFavorite(restaurantId) {
+        const dbHandle = DBHelper.openDatabase();
+        return dbHandle.then(db => {
+            if(!db)
+                return;
+
+            const tx = db.transaction(DBHelper.LOCAL_FAVORITES_OBJECT_STORE, 'readwrite');
+            tx.objectStore(DBHelper.LOCAL_FAVORITES_OBJECT_STORE)
+                .delete(restaurantId);
+
+            return tx.complete;
+        });
+    }
 }

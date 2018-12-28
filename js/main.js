@@ -1,4 +1,5 @@
 import DBHelper from './dbhelper';
+import { onFavoriteBtnClicked } from './utils';
 
 let restaurants,
   neighborhoods,
@@ -177,6 +178,19 @@ const createRestaurantHTML = (restaurant) => {
   more.href = DBHelper.urlForRestaurant(restaurant);
   more.setAttribute('role', 'button');
   li.append(more);
+
+  const favorite = document.createElement('button');
+  const btnId = `fav-${restaurant.id}`;
+  favorite.id = btnId;
+  favorite.className = 'favorite';
+  favorite.innerHTML = (restaurant.is_favorite === true || restaurant.is_favorite === 'true')
+                          ? 'Remove from Favorites' : 'Add to Favorites';
+  favorite.addEventListener('click', function(evt) {
+    evt.preventDefault();
+
+    onFavoriteBtnClicked(this, restaurant);
+  });
+  li.append(favorite);
 
   return li;
 };

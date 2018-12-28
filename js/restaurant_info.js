@@ -75,8 +75,6 @@ const fetchRestaurantFromURL = (callback) => {
             return;
           }
 
-          console.log('offlineReviews: ', offlineReviews);
-
           reviews.push(...offlineReviews);
 
           restaurant.reviews = reviews;
