@@ -357,11 +357,11 @@ export default class DBHelper {
      */
     static fetchUnsubmittedFavorites(callback) {
         const dbHandle = DBHelper.openDatabase();
-        dbHandle.then(db => {
+        return dbHandle.then(db => {
             if(!db)
-                return;
+                return false;
 
-            db.transaction(DBHelper.LOCAL_FAVORITES_OBJECT_STORE)
+            return db.transaction(DBHelper.LOCAL_FAVORITES_OBJECT_STORE)
                 .objectStore(DBHelper.LOCAL_FAVORITES_OBJECT_STORE)
                 .getAll()
                 .then(localFavsInDB => {
