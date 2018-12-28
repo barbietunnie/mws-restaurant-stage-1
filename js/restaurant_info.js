@@ -1,4 +1,5 @@
 import DBHelper from './dbhelper';
+import uuid from 'uuid';
 
 let restaurant;
 let newMap;
@@ -61,15 +62,29 @@ const fetchRestaurantFromURL = (callback) => {
       // Fetch the reviews belonging to the restaurant
       DBHelper.fetchReviewsByRestaurantId(id, (error, reviews) => {
         if (error) {
+          self.restaurant = restaurant;
+
+          fillRestaurantHTML();
           callback(error, null);
           return;
         }
 
-        restaurant.reviews = reviews;
-        self.restaurant = restaurant;
+        DBHelper.fetchUnsubmittedReviews((error, offlineReviews) => {
+          if (error) {
+            callback(error, null);
+            return;
+          }
 
-        fillRestaurantHTML();
-        callback(null, restaurant);
+          console.log('offlineReviews: ', offlineReviews);
+
+          reviews.push(...offlineReviews);
+
+          restaurant.reviews = reviews;
+          self.restaurant = restaurant;
+
+          fillRestaurantHTML();
+          callback(null, restaurant);
+        });
       });
     });
   }
@@ -253,6 +268,7 @@ const registerReviewFormHandler = (restaurant = self.restaurant) => {
     if(!navigator.onLine) {
       // Include the date the review was saved, to use for sorting later
       data.createdAt = Date.now();
+      data.uid = uuid();
 
       // Save to database for later retry
       DBHelper.storeReviewOffline(data);

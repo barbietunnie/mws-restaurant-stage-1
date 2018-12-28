@@ -5,13 +5,23 @@ import idb from 'idb';
  */
 export default class DBHelper {
 
+  static get API_PORT() {
+    const port = 1337; // Change this to your server port
+    return port;
+  }
+
   /**
-   * Database URL.
-   * Change this to restaurants.json file location on your server.
+   * Restaurants API URL.
    */
   static get RESTAURANTS_URL() {
-    const port = 1337; // Change this to your server port
-    return `http://localhost:${port}/restaurants`;
+    return `http://localhost:${DBHelper.API_PORT}/restaurants`;
+  }
+
+  /**
+   * Reviews API URL.
+   */
+  static get REVIEWS_URL() {
+    return `http://localhost:${DBHelper.API_PORT}/reviews`;
   }
 
   /**
@@ -63,6 +73,13 @@ export default class DBHelper {
     return 'restaurant';
   }
 
+  /**
+   * Offline reviews index name
+   */
+  static get UUID_INDEX_NAME() {
+    return 'uid';
+  }
+
   static openDatabase() {
     // If the browser doesn't support service worker,
     // we don't care about having a database
@@ -81,15 +98,16 @@ export default class DBHelper {
                           );
                 const localStore = upgradeDb.createObjectStore(
                                 DBHelper.LOCAL_REVIEWS_OBJECT_STORE,
-                                { autoIncrement: true }
+                                { /*autoIncrement: true*/ keyPath: DBHelper.UUID_INDEX_NAME }
                           );
-                localStore.createIndex('creationDate', 'date');
+                localStore.createIndex('date', 'createdAt');
                 upgradeDb.createObjectStore(
                                 DBHelper.LOCAL_FAVORITES_OBJECT_STORE,
-                                { autoIncrement: true }
+                                { /*autoIncrement: true*/ keyPath: DBHelper.UUID_INDEX_NAME  }
                                 );
         case 2: const reviewsStore = upgradeDb.transaction.objectStore(DBHelper.REVIEWS_OBJECT_STORE);
                 reviewsStore.createIndex(DBHelper.RESTAURANT_REVIEWS_INDEX_NAME, 'restaurant_id');
+
       }
 
     });
@@ -105,7 +123,7 @@ export default class DBHelper {
         return;
 
       let allRestaurants = [];
-      db.transaction(DBHelper.DATABASE_NAME)
+      db.transaction(DBHelper.RESTAURANT_OBJECT_STORE)
           .objectStore(DBHelper.RESTAURANT_OBJECT_STORE)
           .getAll()
           .then(restaurantsInDB => {
@@ -169,7 +187,7 @@ export default class DBHelper {
                           .objectStore(DBHelper.RESTAURANT_OBJECT_STORE)
                           .put(restaurant);
                       callback(null, restaurant);
-                    } else { // Restaurant does not exist in the database
+                    } else { // Restaurant does not exist on the server
                       callback('Restaurant does not exist', null);
                     }
                   })
@@ -198,27 +216,28 @@ export default class DBHelper {
           .index(DBHelper.RESTAURANT_REVIEWS_INDEX_NAME)
           .getAll(Number(id))
           .then(reviews => {
-            if (reviews) {
+            if (reviews && reviews.length > 0) {
               callback(null, reviews);
               return;
             }
 
-            // fetch(`${DBHelper.RESTAURANTS_URL}/${id}`)
-            //     .then(response => response.json())
-            //     .then(restaurant => {
-            //       if (restaurant) { // Got the restaurant
-            //         db.transaction(DBHelper.DATABASE_NAME, 'readwrite')
-            //             .objectStore(DBHelper.RESTAURANT_OBJECT_STORE)
-            //             .put(restaurant);
-            //         callback(null, restaurant);
-            //       } else { // Restaurant does not exist in the database
-            //         callback('Restaurant does not exist', null);
-            //       }
-            //     })
-            //     .catch(error => {
-            //       // const error = (`Request failed. Returned status of ${xhr.status}`);
-            //       callback(error, null);
-            //     });
+            // No reviews found in the database, attempt to load
+            // it from the network
+            fetch(`${DBHelper.REVIEWS_URL}/?restaurant_id=${id}`)
+                .then(response => response.json())
+                .then(reviews => {
+                  if (reviews) { // Got the reviews
+                    const reviewsStore = db.transaction(DBHelper.REVIEWS_OBJECT_STORE, 'readwrite')
+                        .objectStore(DBHelper.REVIEWS_OBJECT_STORE);
+                    reviews.forEach(review => reviewsStore.put(review));
+                    callback(null, reviews);
+                  } else { // No reviews were fetched from the server
+                    callback('No reviews available on the server', null);
+                  }
+                })
+                .catch(error => {
+                  callback(error, null);
+                });
 
           });
 
@@ -315,6 +334,25 @@ export default class DBHelper {
   }
 
   /**
+   * Fetch all unsubmitted reviews.
+   */
+  static fetchUnsubmittedReviews(callback) {
+    const dbHandle = DBHelper.openDatabase();
+    dbHandle.then(db => {
+      if(!db)
+        return;
+
+      db.transaction(DBHelper.LOCAL_REVIEWS_OBJECT_STORE)
+          .objectStore(DBHelper.LOCAL_REVIEWS_OBJECT_STORE)
+          .getAll()
+          .then(localReviewsInDB => {
+            callback(null, localReviewsInDB);
+          }).catch(error => callback(error, null));
+
+    });
+  }
+
+  /**
    * Restaurant page URL.
    */
   static urlForRestaurant(restaurant) {
@@ -378,6 +416,7 @@ export default class DBHelper {
 
       const tx = db.transaction(DBHelper.LOCAL_REVIEWS_OBJECT_STORE, 'readwrite');
       const localStore = tx.objectStore(DBHelper.LOCAL_REVIEWS_OBJECT_STORE);
+
       localStore.put(review);
 
       return tx.complete;
@@ -398,6 +437,26 @@ export default class DBHelper {
       const tx = db.transaction(DBHelper.REVIEWS_OBJECT_STORE, 'readwrite');
       const store = tx.objectStore(DBHelper.REVIEWS_OBJECT_STORE);
       store.put(review);
+
+      return tx.complete;
+    });
+  }
+
+
+  /**
+   * Delete the specified unsubmitted review from database
+   *
+   * @param review
+   */
+  static removeUnsubmittedReview(reviewUid) {
+    const dbHandle = DBHelper.openDatabase();
+    dbHandle.then(db => {
+      if(!db)
+        return;
+
+      const tx = db.transaction(DBHelper.LOCAL_REVIEWS_OBJECT_STORE, 'readwrite');
+      tx.objectStore(DBHelper.LOCAL_REVIEWS_OBJECT_STORE)
+          .delete(reviewUid);
 
       return tx.complete;
     });
